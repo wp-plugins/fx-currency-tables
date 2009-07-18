@@ -788,7 +788,7 @@ function currency_table_shortcode($atts) {
 
   $myHTML .= '<a href="http://www.gatehouseintl.com/wordpress-plugin-currency-converter/">';
 
-  $myHTML .= '<img src="' . WP_PLUGIN_URL . '/currency-table/images/get_widget2.gif" width="90" height="23" alt="Get Widget" /></a>' . "\n";
+  $myHTML .= '<img src="' . WP_PLUGIN_URL . '/fx-currency-tables/images/get_widget2.gif" width="90" height="23" alt="Get Widget" /></a>' . "\n";
 
   $myHTML .= '</td>' . "\n";
   */
@@ -963,13 +963,13 @@ function widget_currency_table_init() {
               if ($old_rate - $new_rate > 0) {
 
                 $changeCSS = ' changeDown';
-                $changeImage = '<img width="9" height="10" src="' . WP_PLUGIN_URL . '/currency-table/images/changeDown.gif" alt="down" />';
+                $changeImage = '<img width="9" height="10" src="' . WP_PLUGIN_URL . '/fx-currency-tables/images/changeDown.gif" alt="down" />';
                 $changeSign  = '-';
               }
               else {
 
                 $changeCSS = ' changeUp';
-                $changeImage = '<img width="9" height="10" src="' . WP_PLUGIN_URL . '/currency-table/images/changeUp.gif" alt="up" />';
+                $changeImage = '<img width="9" height="10" src="' . WP_PLUGIN_URL . '/fx-currency-tables/images/changeUp.gif" alt="up" />';
                 $changeSign  = '+';
               }
             }
@@ -1006,7 +1006,7 @@ function widget_currency_table_init() {
 
     $myHTML .= '<a href="http://www.gatehouseintl.com/wordpress-plugin-currency-converter/">';
 
-    $myHTML .= '<img src="' . WP_PLUGIN_URL . '/currency-table/images/get_widget2.gif" width="90" height="23" alt="Get Widget" /></a>' . "\n";
+    $myHTML .= '<img src="' . WP_PLUGIN_URL . '/fx-currency-tables/images/get_widget2.gif" width="90" height="23" alt="Get Widget" /></a>' . "\n";
 
     $myHTML .= '</td>' . "\n";
 
