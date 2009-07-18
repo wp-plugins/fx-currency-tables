@@ -1,12 +1,8 @@
 <?php
 /*
-Plugin Name: Currency cross table
-Plugin URI: http://www.fx-foreignexchange.com
-Description: FX-ForeignExchange 6 currency cross table plugin for Wordpress. 
-This easy to use tool adds a horizontal 6 currency table to posts and pages, and the widget adds a 3 column portrait table to sidebars. 
-The 6 currencies can be selected by the user from a list of 3 over 180 worldwide. 
-The rates are based on a 12 minute delay feed and are live ECB interbank rates.
-An ideal tool for forex, currency trading and commodities sites and a very attractive addition to any e-commerce site where buyers are likely to originate across more than one currency zone.
+Plugin Name: FX-Currency cross table
+Plugin URI: http://www.fx-foreignexchange.com/wordpress-currency-table-plugin/2009/07/03/
+Description: FX-ForeignExchange 6 currency cross table plugin for Wordpress. This easy to use tool adds a horizontal 6 currency table to posts and pages, and the widget adds a 3 column portrait table to sidebars. The 6 currencies can be selected by the user from a list of 3 over 180 worldwide. The rates are based on a 12 minute delay feed and are live ECB interbank rates. An ideal tool for forex, currency trading and commodities sites and a very attractive addition to any e-commerce site where buyers are likely to originate across more than one currency zone.
 Author: Andy Stevenson
 Author URI: http://www.fx-foreignexchange.com
 Version: 0.0.3
