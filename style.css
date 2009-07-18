@@ -1,0 +1,70 @@
+.dataSmall {
+	font-size: 11px;
+}
+
+.currencyDataTable {
+	font-size: 12px;
+}
+
+.currencyDataTable th {
+	background-color: #BFD6E0;
+	font-weight: normal;
+	font-size: 11px;
+	padding-left: 4px;
+	padding-right: 4px;
+	vertical-align: bottom;
+}
+
+.currencyDataTable tr:hover {
+	background-color: #FC6;
+}
+
+.currencyDataTable td {
+	padding-left: 3px;
+	padding-right: 3px;
+	vertical-align: top;
+	text-align: left;
+}
+
+.currencyDataTable .currencyData {
+	text-align: right;
+}
+
+.currencyDataTable tr {
+	background-color: #FFF;
+}
+
+.currencyDataTable .currencyStripe {
+	background-color: #F3F3F3;
+}
+
+.currencyDataTable tr.currencyDataSlick td {
+	border-bottom: 1px solid #EEE;
+}
+
+.currencyDataTable tr.currencyDataSlick th {
+	background-color: #FFF;
+	border-bottom: 1px solid #EEE;
+}
+
+.currencyDataTable th.subHeader {
+	background-color: #FFF;
+	padding: 0px;
+	padding-top: 10px;
+}
+
+/* widget */
+
+.changeUp {
+	color: #090;
+}
+
+.changeDown {
+	color: #A00;
+}
+
+.module {
+	margin-top: 5px;
+	overflow: hidden;
+	width: auto;
+}
