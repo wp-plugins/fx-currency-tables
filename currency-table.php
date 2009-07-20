@@ -357,12 +357,10 @@ if (preg_match_all("/(\"([A-Z]{3})\"\:\"([0-9\.]+)\")/", $myjson, $matches)) {
 
 .currencyDataTable {
 	font-size: 12px;
-		color: #000000;
 }
 
 .currencyDataTable th {
-	background-color: #000000;
-	color: #fff;
+	background-color: #BFD6E0;
 	font-weight: normal;
 	font-size: 11px;
 	padding-left: 4px;
@@ -386,7 +384,7 @@ if (preg_match_all("/(\"([A-Z]{3})\"\:\"([0-9\.]+)\")/", $myjson, $matches)) {
 }
 
 .currencyDataTable tr {
-	background-color: #000000;
+	background-color: #FFF;
 }
 
 .currencyDataTable .currencyStripe {
@@ -487,17 +485,17 @@ function currency_table_show() {
     $s .= '<br/><br/>' . "\n";
     $s .= '<h3>Currencies - Cross Rates</h3>' . "\n";
 
-    $s .= '<table cellspacing="0" cellpadding="0" style="width: 100%; color:#000000;" class="currencyDataTable currencyDataTableMD">';
+    $s .= '<table cellspacing="0" cellpadding="0" style="width: 100%" class="currencyDataTable currencyDataTableMD">';
 
     for ($i = 0; $i - 6 < 0; $i++) {
 
       if ($i == 0) {
 
-        $s .= '<thead><tr><th style="width: 25px; color:#000000;">&nbsp;</th>';
+        $s .= '<thead><tr><th style="width: 25px;">&nbsp;</th>';
 
         for ($j = 0; $j - 6 < 0; $j++) {
 
-          $s .= '<th align="right" style="color:#000000;"><b>' . $currencies_selected_list[$j] . '</b></th>';
+          $s .= '<th align="right"><b>' . $currencies_selected_list[$j] . '</b></th>';
         }
 
         $s .= '</tr></thead>' . "\n";
@@ -797,7 +795,7 @@ function currency_table_shortcode($atts) {
 
   //$myHTML .= '<a href="http://www.gatehouseintl.com/wordpress-plugin-currency-converter/" style="font-size: 10px;">';
 
-  $myHTML .= '<a href="http://www.fx-foreignexchange.com/currency_widget.php?value=1.00&from=EUR&to=GBP&r=widget" onClick="window.name=\'exchange_rates_todayNew\';window.open(this.href,\'converter\',\'toolbar=no,location=no,directories=no,status=no,menubar=no,width=660,height=880,resizable=yes,scrollbars=yes\');return false;" style="font-size: 10px;">';
+  $myHTML .= '<a href="http://www.fx-foreignexchange.com/currency_widget.php?value={price}&from=EUR&to=GBP&r=813" rel="nofollow" onClick="window.name=\'exchange_rates_todayNew\';window.open(this.href,\'converter\',\'toolbar=no,location=no,directories=no,status=no,menubar=no,width=660,height=880,resizable=yes,scrollbars=yes\');return false;" style="font-size: 10px;">';
   
   $myHTML .= 'Other&nbsp;Currencies'; // Other Currencies
 
@@ -1014,7 +1012,7 @@ function widget_currency_table_init() {
 
     //$myHTML .= '<a href="http://www.gatehouseintl.com/wordpress-plugin-currency-converter/" style="font-size: 10px;">';
 
-    $myHTML .= '<a href="http://www.fx-foreignexchange.com/currency_widget.php?value=1.00&from=EUR&to=GBP&r=widget"  onClick="window.name=\'exchange_rates_todayNew\';window.open(this.href,\'converter\',\'toolbar=no,location=no,directories=no,status=no,menubar=no,width=660,height=880,resizable=yes,scrollbars=yes\');return false;" style="font-size: 10px;">';
+    $myHTML .= '<a href="http://www.fx-foreignexchange.com/currency_widget.php?value={price}&from=EUR&to=GBP&r=813" rel="nofollow" onClick="window.name=\'exchange_rates_todayNew\';window.open(this.href,\'converter\',\'toolbar=no,location=no,directories=no,status=no,menubar=no,width=660,height=880,resizable=yes,scrollbars=yes\');return false;" style="font-size: 10px;">';
     
     $myHTML .= 'Other<br/>Currencies'; // Other Currencies
 
