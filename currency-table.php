@@ -5,31 +5,105 @@ Plugin URI: http://www.fx-foreignexchange.com/wordpress-currency-table-plugin/20
 Description: FX-ForeignExchange 6 currency cross table plugin for Wordpress. This easy to use tool adds a horizontal 6 currency table to posts and pages, and the widget adds a 3 column portrait table to sidebars. The 6 currencies can be selected by the user from a list of 3 over 180 worldwide. The rates are based on a 12 minute delay feed and are live ECB interbank rates. An ideal tool for forex, currency trading and commodities sites and a very attractive addition to any e-commerce site where buyers are likely to originate across more than one currency zone.
 Author: Andy Stevenson
 Author URI: http://www.fx-foreignexchange.com
-Version: 0.0.3
-
+Version: 0.2.0
 */
 
+error_reporting(0);
 //#################
 // Stop direct call
 if(preg_match('#' . basename(__FILE__) . '#', $_SERVER['PHP_SELF'])) { die('...'); }
 //#################  
 
-define('CURRENCYTABLEFOLDER', plugin_basename( dirname(__FILE__)) );
+define('CURRENCY_TABLE_FOLDER', plugin_basename( dirname(__FILE__)) );
 
-define('CURRENCYTABLEJSONURL', 'http://www.fx-foreignexchange.com/currencies_local.json' );
+define('CURRENCY_TABLE_JSON_URL', 'http://gatehouseinternational.com/wp-content/plugins/fx-currency-tables_server/currency-table_feed.php' );
+define('CURRENCY_TABLE_FREQ', 12 );
 
-define('CURRENCYTABLEFREQ', 12 );
+//action to have WordPress load the widget
+add_action('widgets_init', 'widget_currency_table_init');
+//action to add styles to the header
+add_action("wp_head", "fx_currency_table_styles");
+add_action("admin_head", "fx_currency_table_styles");
 
-// GBP	USD	CAD	AED	EUR	CHF
+$fx_currency_table_styles=false;
+
+//action to allow shortcode
+add_shortcode('currency_table', 'fx_currency_table_shortcode');
+
+//currencytable api key
+global $ct_api_key;
+$ct_api_key = get_option("currency_table_api");
 
 /**
  * shows options page
  */
+function currency_table_main()
+{
+  global $ct_api_key;
+    trigger_currency_table_actions();
+
+
+  if ($ct_api_key=="")    
+    currency_table_sign();
+  else  
+   currency_table_options_page();
+}
+function trigger_currency_table_actions()
+{
+  switch ($_POST["action"])
+  {
+    case "currency_table_api_sign":
+      global $ct_api_key;
+
+      $api=$_POST["currency_table_api"];
+      
+      //check if correct api            
+      if (get_json(CURRENCY_TABLE_JSON_URL."?action=api_check&api=".$api)=="OK") $ct_api_key=$api;
+      else  { $ct_api_key=""; echo "<p class='error'>Incorrect Currency Table API Key</p>";}
+      //update CT api key
+      update_option("currency_table_api",$ct_api_key);
+    break;
+    case "currency_table_api_clear":
+      global $ct_api_key;
+      $ct_api_key="";
+      //update CT api key
+      update_option("currency_table_api",$ct_api_key);      
+    break;
+  }  
+}
+function currency_table_sign()
+{
+?>
+  <div class="wrap">
+  <h2>Currency Table</h2>
+  
+  <form action="options-general.php?page=currency-table" method="post">
+    Insert your Currency Tables Plugin API key here:<br />
+    <div style="margin-left:20px;">
+      <input type="text" name="currency_table_api" value=""/>
+      
+    <!--p class="submit"-->
+    
+      <input name="currency_table_save" class="button-primary" value="<?php _e('Save Changes'); ?>" type="submit"/>
+      <input type="hidden" name="action" value="currency_table_api_sign"  />
+     </div> 
+    <!--/p-->
+  </form>
+  
+  <p>Don't have a Currency Table API Key? <a href="http://www.gatehouseintl.com/wordpress-plugin-currency-table-api-sign-up/" target="_blank">Get one here</a></p>
+  
+  <div class="ct_description">
+  <p class="ct_bold">Why we ask you for an API key?</p>
+
+  <p><b>Currency Table Plugin</b> operates by installing a file on your web hosting which calls a feed on our server to provide you with live currency rates. We ask you to sign up for an API key in order that we can make clear the <a href="http://www.gatehouseintl.com/wordpress-plugin-currency-table-api-sign-up/" target="_blank">terms of use</a> of the file we provide you that connects to our servers.</p> 
+</div>
+<?
+
+}
+
 function currency_table_options_page()
 {	
-
-  global $wpdb;
-
+  global $wpdb, $ct_api_key;
   if (!current_user_can('manage_options'))
     wp_die(__('Sorry, but you have no permissions to change settings.'));
 
@@ -41,69 +115,54 @@ function currency_table_options_page()
   // save data
   if ( isset($_POST['currency_table_save']) ) {
 
-    //Array ( [CLS1] => [CLS2] => [CLS3] => [CLS4] => [CLS5] => [CLS6] => [currency_table_save] => Save Changes )
-    	
-    //print_r($_POST);
-
     $query = 'UPDATE `' . $table_name . '` SET `cur1` = \'\'';
-
     $wpdb->query($query);
 
     for ($i = 1; $i - 7 < 0; $i++) {
-
       $name = 'CLS' . $i;
-
-      //print $name . ' :: ';
-
       if (strlen($_POST[$name]) == 0) {
-
         break;
       }
-
       $cur = $_POST[$name];
 
-      //print $cur . ' :!: ';
-
       if (strlen($cur) - 3 == 0) {
-
         $query = 'UPDATE `' . $table_name . '` SET `cur1` = \'' . $cur . '\' WHERE `id` = ' . $i;
-
         $wpdb->query($query);
       }
     }
 
     //
     // Delete some old rartes
-    //
-    $query = 'UPDATE `' . $table_name . '` SET `old_rate` = 0 WHERE `old_cur1` <> `cur1`';
-
+    $query = 'UPDATE `' . $table_name . '` SET old_rate = 0 WHERE old_cur1 <> cur1';
     $wpdb->query($query);
   }
   else {
-
-  }
-
   //
   // Check cron. May be it failed.
   //
+  
   currency_table_check_schedule(1);
 
+  }
+
+
   // show page
+  
   ?>
 
 <div class="wrap">
   <h2>Currency Table</h2>
   <form action="options-general.php?page=currency-table" method="post">
+      Clear API key
+      <input name="currency_table_save" class="button-primary" value="<?php _e('Submit'); ?>" type="submit" />
+      <input type="hidden" name="action" value="currency_table_api_clear" />
+  </form>
+  <form action="options-general.php?page=currency-table" method="post">
   <input type="hidden" value="currency-table-submit" value="1" />
   <?php
 
-$myjson = get_json(CURRENCYTABLEJSONURL);
-
-//print $main_source;
-
-//print '<br/><br/>';
-
-//print $myjson;
+$url=CURRENCY_TABLE_JSON_URL."?action=get_feed&api=".$ct_api_key;
+$myjson = get_json($url);
 
 $query = 'SELECT `cur1`, `old_cur1`, `old_rate`, `new_rate`, `cron_update` FROM `' . $table_name . '` ORDER BY id';
 
@@ -126,25 +185,9 @@ if ($curs) {
   }
 }
 
-
-// {"AED":"5.1282051282051277","ALL":"133.33333333333334","ANG":"2.478929102627665","
-
-if (preg_match_all("/(\"([A-Z]{3})\"\:\"([0-9\.]+)\")/", $myjson, $matches)) {
-
-
-  //print_r($matches);
-  //print_r($matches[3]);
-
+if (preg_match_all("/(\"([A-Z]{3})\"\:([0-9\.]+))/", $myjson, $matches)) {
   $currencies = $matches[2];
-
   $rates = $matches[3];
-
-  $currencies_list1 = '<option value="">Not selected</option>';
-  $currencies_list2 = '<option value="">Not selected</option>';
-  $currencies_list3 = '<option value="">Not selected</option>';
-  $currencies_list4 = '<option value="">Not selected</option>';
-  $currencies_list5 = '<option value="">Not selected</option>';
-  $currencies_list6 = '<option value="">Not selected</option>';
 
   for ($j = 0; $j - count($currencies) < 0; $j++) {
 
@@ -154,85 +197,13 @@ if (preg_match_all("/(\"([A-Z]{3})\"\:\"([0-9\.]+)\")/", $myjson, $matches)) {
     for ($i = 1; $i - 7 < 0; $i++) {
 
       if ($currencies_selected_list[$i - 1] == $val) {
-
         $currencies_rates_list[$i - 1] = $rate;
-
         $query = 'UPDATE `' . $table_name . '` SET `new_rate` = \'' . $rate . '\' WHERE `id` = ' . $i;
-
         $wpdb->query($query);
       }
     }
   }
 
-  //
-  // Prepare Select lists
-  //
-  foreach ($currencies as $val) {
-
-    $currencies_list1 .= '<option vlaue="' . $val . '"';
-    
-    if ($currencies_selected_list[0] == $val) {
-
-      $currencies_list1 .= ' selected="selected"';
-    }
-    
-    $currencies_list1 .= '>' . $val . '</option>' . "\n";
-  }
-  foreach ($currencies as $val) {
-
-    $currencies_list2 .= '<option vlaue="' . $val . '"';
-    
-    if ($currencies_selected_list[1] == $val) {
-
-      $currencies_list2 .= ' selected="selected"';
-    }
-    
-    $currencies_list2 .= '>' . $val . '</option>' . "\n";
-  }
-  foreach ($currencies as $val) {
-
-    $currencies_list3 .= '<option vlaue="' . $val . '"';
-
-    if ($currencies_selected_list[2] == $val) {
-
-      $currencies_list3 .= ' selected="selected"';
-    }
-    
-    $currencies_list3 .= '>' . $val . '</option>' . "\n";
-  }
-  foreach ($currencies as $val) {
-
-    $currencies_list4 .= '<option vlaue="' . $val . '"';
-    
-    if ($currencies_selected_list[3] == $val) {
-
-      $currencies_list4 .= ' selected="selected"';
-    }
-    
-    $currencies_list4 .= '>' . $val . '</option>' . "\n";
-  }
-  foreach ($currencies as $val) {
-
-    $currencies_list5 .= '<option vlaue="' . $val . '"';
-    
-    if ($currencies_selected_list[4] == $val) {
-
-      $currencies_list5 .= ' selected="selected"';
-    }
-    
-    $currencies_list5 .= '>' . $val . '</option>' . "\n";
-  }
-  foreach ($currencies as $val) {
-
-    $currencies_list6 .= '<option vlaue="' . $val . '"';
-    
-    if ($currencies_selected_list[5] == $val) {
-
-      $currencies_list6 .= ' selected="selected"';
-    }
-    
-    $currencies_list6 .= '>' . $val . '</option>' . "\n";
-  }
 
   // 0000-00-00 00:00:00
   ?>
@@ -246,102 +217,43 @@ if (preg_match_all("/(\"([A-Z]{3})\"\:\"([0-9\.]+)\")/", $myjson, $matches)) {
   <td style="width: 150px"><b>Old Rate<b></td>
   <td style="width: 150px"><b>Rate updated<b></td>
   </tr>
+  <?
+  for ($i=0;$i<7;$i++)
+  {
+  ?>
   <tr>
   <td>
-  <select name="CLS1">
-  <?php print $currencies_list1; ?>
+  <select name="CLS<?=$i+1;?>">
+    <option value="">Not selected</option>
+  <?php 
+    foreach ($currencies as $val) {
+
+    echo '<option vlaue="' . $val . '"';
+    
+    if ($currencies_selected_list[$i] == $val) {
+
+      echo ' selected="selected"';
+    }
+    
+    echo '>' . $val . '</option>' . "\n";
+  }
+  ?>
   </select>
   </td>
   <td>
-  &nbsp;<?print $currencies_rates_list[0]; ?>
+  &nbsp;<?print ($currencies_selected_list[$i]=="")?0:$currencies_rates_list[$i]; ?>
   </td>
   <td>
-  &nbsp;<?print $currencies_old_rates_list[0]; ?>
+  &nbsp;<?print ($currencies_selected_list[$i]=="")?0:$currencies_old_rates_list[$i]; ?>
   </td>
   <td>
-  &nbsp;<? if ( $currencies_cron_update_list[0] == '0000-00-00 00:00:00' ) { print 'never'; } else { print $currencies_cron_update_list[0]; } ?>
+  &nbsp;<? if (( $currencies_cron_update_list[$i] == '0000-00-00 00:00:00' )||($currencies_selected_list[$i]=="")) { print 'never'; } else { print $currencies_cron_update_list[$i]; } ?>
   </td>
   </tr>
-  <tr>
-  <td>
-  <select name="CLS2">
-  <?php print $currencies_list2; ?>
-  </select>
-  </td>
-  <td>
-  &nbsp;<?print $currencies_rates_list[1]; ?>
-  </td>
-  <td>
-  &nbsp;<?print $currencies_old_rates_list[1]; ?>
-  </td>
-  <td>
-  &nbsp;<? if ( $currencies_cron_update_list[1] == '0000-00-00 00:00:00' ) { print 'never'; } else { print $currencies_cron_update_list[1]; } ?>
-  </td>
-  </tr>
-  <tr>
-  <td>
-  <select name="CLS3">
-  <?php print $currencies_list3; ?>
-  </select>
-  </td>
-  <td>
-  &nbsp;<?print $currencies_rates_list[2]; ?>
-  </td>
-  <td>
-  &nbsp;<?print $currencies_old_rates_list[2]; ?>
-  </td>
-  <td>
-  &nbsp;<? if ( $currencies_cron_update_list[2] == '0000-00-00 00:00:00' ) { print 'never'; } else { print $currencies_cron_update_list[2]; } ?>
-  </td>
-  </tr>
-  <tr>
-  <td>
-  <select name="CLS4">
-  <?php print $currencies_list4; ?>
-  </select>
-  </td>
-  <td>
-  &nbsp;<?print $currencies_rates_list[3]; ?>
-  </td>
-  <td>
-  &nbsp;<?print $currencies_old_rates_list[3]; ?>
-  </td>
-  <td>
-  &nbsp;<? if ( $currencies_cron_update_list[3] == '0000-00-00 00:00:00' ) { print 'never'; } else { print $currencies_cron_update_list[3]; } ?>
-  </td>
-  </tr>
-  <tr>
-  <td>
-  <select name="CLS5">
-  <?php print $currencies_list5; ?>
-  </select>
-  </td>
-  <td>
-  &nbsp;<?print $currencies_rates_list[4]; ?>
-  </td>
-  <td>
-  &nbsp;<?print $currencies_old_rates_list[4]; ?>
-  </td>
-  <td>
-  &nbsp;<? if ( $currencies_cron_update_list[4] == '0000-00-00 00:00:00' ) { print 'never'; } else { print $currencies_cron_update_list[4]; } ?>
-  </td>
-  </tr>
-  <tr>
-  <td>
-  <select name="CLS6">
-  <?php print $currencies_list6; ?>
-  </select>
-  </td>
-  <td>
-  &nbsp;<?print $currencies_rates_list[5]; ?>
-  </td>
-  <td>
-  &nbsp;<?print $currencies_old_rates_list[5]; ?>
-  </td>
-  <td>
-  &nbsp;<? if ( $currencies_cron_update_list[5] == '0000-00-00 00:00:00' ) { print 'never'; } else { print $currencies_cron_update_list[5]; } ?>
-  </td>
-  </tr>
+  <?
+  }
+
+  ?>
   </table>
   <br/>
   <table border="0">
@@ -427,7 +339,6 @@ if (preg_match_all("/(\"([A-Z]{3})\"\:\"([0-9\.]+)\")/", $myjson, $matches)) {
 
   <?php print currency_table_show(); ?>
   
-    <br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/>
     <p class="submit">
       <input name="currency_table_save" class="button-primary" value="<?php _e('Save Changes'); ?>" type="submit" />
     </p>
@@ -440,7 +351,8 @@ if (preg_match_all("/(\"([A-Z]{3})\"\:\"([0-9\.]+)\")/", $myjson, $matches)) {
 
 
 function currency_table_show() {
-
+  //try to load css
+  fx_currency_table_styles();
   global $wpdb;
 
   $table_name = $wpdb->prefix . 'currency_table';
@@ -470,34 +382,26 @@ function currency_table_show() {
   $s = '';
 
   for ($i = 0; $i - 6 < 0; $i++) {
-
     $s .= $currencies_selected_list[$i];
   }
 
   if ($s == '') {
-
     // Do nothing
   }
   else {
-
     $s = '';
-
     $s .= '<br/><br/>' . "\n";
     $s .= '<h3>Currencies - Cross Rates</h3>' . "\n";
-
     $s .= '<table cellspacing="0" cellpadding="0" style="width: 100%" class="currencyDataTable currencyDataTableMD">';
-
     for ($i = 0; $i - 6 < 0; $i++) {
-
+      if ($currencies_selected_list[$i]=="") continue;
+      
       if ($i == 0) {
-
         $s .= '<thead><tr><th style="width: 25px;">&nbsp;</th>';
-
         for ($j = 0; $j - 6 < 0; $j++) {
-
+          if ($currencies_selected_list[$j]=="") continue;
           $s .= '<th align="right"><b>' . $currencies_selected_list[$j] . '</b></th>';
         }
-
         $s .= '</tr></thead>' . "\n";
         $s .= '<tbody class="currencyDataSmall">';
       }
@@ -512,32 +416,25 @@ function currency_table_show() {
       }
 
       for ($j = 0; $j - 6 < 0; $j++) {
+        if ($currencies_selected_list[$j]=="") continue;
 
         if ($j == 0) {
-
           $s .= '<td class="currencyDataBold">' . $currencies_selected_list[$i] . '</td>';
         }
 
         if ($i == $j) {
-
           $s .= '<td class="currencyData"><b>1</b></td>';
         }
         else {
-
           $rate = '&nbsp;';
-
           if ($currencies_rates_list[$i] == 0) {
-
           }
           else {
-
             $rate = round($currencies_rates_list[$j] / $currencies_rates_list[$i], 5);
           }
-
           $s .= '<td class="currencyData">' . $rate . '</td>';
         }
       }
-      
       $s .= '</tr>' . "\n";
     }
 
@@ -562,23 +459,19 @@ function currency_table_check_schedule($run) {
   $currency_table_check_interval = (int)get_option('currency_table_check_interval');
 
   if ($currency_table_check_interval - 1 < 0) 
-    $currency_table_check_interval = CURRENCYTABLEFREQ;
+    $currency_table_check_interval = CURRENCY_TABLE_FREQ;
 
   $tmp2 = ($currency_table_check_interval + 3)*60;
 
   if ($tmp - $tmp2 > 0) {
+  
     //
     // Run now. Schedule again.
     //
-    //print $tmp;
-    //print '<br/>';
-    //print $tmp2;
     if ($run) {
-      //print 12;
       currency_table_cron_run();
     }
     else {
-
       currency_table_cron();
     }
 
@@ -590,7 +483,7 @@ function currency_table_check_schedule($run) {
  */
 function currency_table_add_options_page()
 {
-  add_options_page('Currency Table', 'Currency Table', 9, 'currency-table', 'currency_table_options_page');
+  add_options_page('Currency Table', 'Currency Table', 9, 'currency-table', 'currency_table_main');
 }
 
 add_action('admin_menu', 'currency_table_add_options_page');
@@ -650,15 +543,12 @@ function currency_table_install()
   }
 
   if(!get_option('currency_table_check_interval'))
-    add_option('currency_table_check_interval', CURRENCYTABLEFREQ); // every 12 minutes
+    add_option('currency_table_check_interval', CURRENCY_TABLE_FREQ); // every 12 minutes
 
   $options['currency_table_title'] = 'Currency Table';
 
   if(!get_option('widget_currency_table'))
     add_option('widget_currency_table', $options);
-
-  // update_option('widget_currency_table', $options);
-
   currency_table_reschedule();  
 }
 
@@ -671,44 +561,41 @@ function currency_table_cron()
 }
 
 function currency_table_cron_run() {
-
   global $wpdb;
   //
   // Read JSON and update table
   //
   $table_name = $wpdb->prefix . 'currency_table';
-
-  $query = 'UPDATE `' . $table_name . '` SET `old_rate` = `new_rate`';
-
-  $wpdb->query($query);
-
-  $myjson = get_json(CURRENCYTABLEJSONURL);
-
-  //print $myjson;
+  $myjson = get_json(CURRENCY_TABLE_JSON_URL);
 
   $query = 'SELECT `cur1` FROM `' . $table_name . '` ORDER BY `id`';
-
-  //print $query; exit;
 
   $curs = $wpdb->get_results($query);
 
   if ($curs) {
     foreach($curs as $cur) {
 
-      if (preg_match_all("/(\"" . $cur->cur1 . "\"\:\"([0-9\.]+)\")/", $myjson, $matches)) {
+      if (preg_match_all("/(\"" . $cur->cur1 . "\"\:([0-9\.]+))/", $myjson, $matches)) {
 
         $rates = $matches[2];
+        
+        $query = 'SELECT  `new_rate` FROM `' . $table_name . '` where `cur1` = \'' . $cur->cur1 . '\'';
+        $tmp = $wpdb->get_var($query);
+
+        //update if new rate not the same
+        $query = 'UPDATE `' . $table_name . '` ' .
+        'SET `old_rate` = `new_rate` ' .
+        'WHERE `new_rate` <> \'' . $rates[0] . '\' and `cur1` = \'' . $cur->cur1 . '\'';
+        $wpdb->query($query);
 
         $query = 'UPDATE `' . $table_name . '` ' .
         'SET `new_rate` = \'' . $rates[0] . '\', `cron_update` = NOW() ' .
-        'WHERE `cur1` = \'' . $cur->cur1 . '\'';
+        'WHERE `new_rate` <> \'' . $rates[0] . '\' and `cur1` = \'' . $cur->cur1 . '\'';
 
         $wpdb->query($query);
       }
     }
   }
-
-  // {"AED":"5.1282051282051277","ALL":"133.33333333333334","ANG":"2.478929102627665","
 }
 
 
@@ -719,7 +606,7 @@ function currency_table_reschedule()
   $currency_table_check_interval = (int)get_option('currency_table_check_interval');
 
   if ($currency_table_check_interval - 1 < 0) 
-    $currency_table_check_interval = CURRENCYTABLEFREQ;
+    $currency_table_check_interval = CURRENCY_TABLE_FREQ;
 
   $next_run = time() + $currency_table_check_interval*60;
 
@@ -752,6 +639,7 @@ function currency_table_uninstall()
 
   //remove the widget_settings
   delete_option('widget_currency_table');
+  delete_option("currency_table_api");
 }
 
 // since WordPress 2.7
@@ -760,12 +648,13 @@ if ( function_exists('register_uninstall_hook') )
 
 //register activate/deactivate hooks
 //
-register_activation_hook(CURRENCYTABLEFOLDER.'/currency-table.php','currency_table_install');
-register_deactivation_hook(CURRENCYTABLEFOLDER.'/currency-table.php','currency_table_deactivate');
+register_activation_hook(CURRENCY_TABLE_FOLDER.'/currency-table.php','currency_table_install');
+register_deactivation_hook(CURRENCY_TABLE_FOLDER.'/currency-table.php','currency_table_deactivate');
 
 //function to display friends using shortcode
-function currency_table_shortcode($atts) {
-	
+function fx_currency_table_shortcode($atts) {
+  //try to load css
+	fx_currency_table_styles();
   //
   // Check cron. May be it failed.
   //
@@ -795,7 +684,7 @@ function currency_table_shortcode($atts) {
 
   //$myHTML .= '<a href="http://www.gatehouseintl.com/wordpress-plugin-currency-converter/" style="font-size: 10px;">';
 
-  $myHTML .= '<a href="http://www.fx-foreignexchange.com/currency_widget.php?value={price}&from=EUR&to=GBP&r=813" rel="nofollow" onClick="window.name=\'exchange_rates_todayNew\';window.open(this.href,\'converter\',\'toolbar=no,location=no,directories=no,status=no,menubar=no,width=660,height=880,resizable=yes,scrollbars=yes\');return false;" style="font-size: 10px;">';
+  $myHTML .= '<a href="http://www.fx-foreignexchange.com/currency_widget.php?value=1&from=EUR&to=GBP&r=813" rel="nofollow" onClick="window.name=\'exchange_rates_todayNew\';window.open(this.href,\'converter\',\'toolbar=no,location=no,directories=no,status=no,menubar=no,width=660,height=880,resizable=yes,scrollbars=yes\');return false;" style="font-size: 10px;">';
   
   $myHTML .= 'Other&nbsp;Currencies'; // Other Currencies
 
@@ -821,7 +710,8 @@ function widget_currency_table_init() {
   } //close if
 
   function widget_currency_table_display($pmcArgs) {
-
+    //try to load css
+    fx_currency_table_styles();
     //
     // Check cron. May be it failed.
     //
@@ -853,7 +743,8 @@ function widget_currency_table_init() {
     //$myHTML .= '<div id="currFlatRates">' . "\n";
     //$myHTML .= '<div class="NONE">' . "\n";
 
-    $myHTML .= '<div class="module">' . "\n";
+    //$myHTML .= '<div class="module">' . "\n";
+    //$myHTML .= '<div>' . "\n";
     $myHTML .= '<table width="100%" cellspacing="1" cellpadding="1" border="0" class="currencyDataTable">' . "\n";
 
     $myHTML .= '<tbody><tr>' . "\n";
@@ -878,7 +769,6 @@ function widget_currency_table_init() {
 
     if ($curs) {
       foreach($curs as $cur) {
-
         $currencies_selected_list[]    = $cur->cur1;
         $currencies_rates_list[]       = $cur->new_rate;
         $currencies_old_rates_list[]   = $cur->old_rate;
@@ -889,7 +779,7 @@ function widget_currency_table_init() {
     $k++;
 
     for ($i = 0; $i - 6 < 0; $i++) {
-
+      if ($currencies_selected_list[$i]=="") continue;
       for ($j = 1; $j - 6 < 0; $j++) {
 
         if ($i == $j) {
@@ -900,7 +790,7 @@ function widget_currency_table_init() {
 
           $cur1 = $currencies_selected_list[$i];
           $cur2 = $currencies_selected_list[$j];
-
+          if ($currencies_selected_list[$j]=="")  continue;
           $old_rate1 = 0.0 + $currencies_old_rates_list[$i];
           $old_rate2 = 0.0 + $currencies_old_rates_list[$j];
 
@@ -930,6 +820,7 @@ function widget_currency_table_init() {
             $k++; // row color changer
 
             $myHTML .= '<td>' . $cur1 . '/' . $cur2 . '</td>' . "\n";
+            
 
             $old_rate = $old_rate1 / $old_rate2;
             $new_rate = $new_rate1 / $new_rate2;
@@ -983,7 +874,7 @@ function widget_currency_table_init() {
               $display_new_rate = round($new_rate, 3);
             }
 
-            $myHTML .= '<td class="data' . $changeCSS . '">' . $changeImage . $display_new_rate . '</td>' . "\n";
+            $myHTML .= '<td class="data' . $changeCSS . '"><nobr>' . $changeImage . $display_new_rate . '</nobr></td>' . "\n";
 
             $myHTML .= '<td class="data' . $changeCSS . '">' . $changeImage . $changeSign . $display_percent . '</td>' . "\n";
 
@@ -996,7 +887,7 @@ function widget_currency_table_init() {
 
     $myHTML .= '</tbody></table>' . "\n";
 
-    $myHTML .= '<table width="100%" cellspacing="1" cellpadding="3" border="0">' . "\n";
+    $myHTML .= '<br /><table width="100%" cellspacing="1" cellpadding="3" border="0">' . "\n";
 
     $myHTML .= '<tr>' . "\n";
 
@@ -1012,7 +903,7 @@ function widget_currency_table_init() {
 
     //$myHTML .= '<a href="http://www.gatehouseintl.com/wordpress-plugin-currency-converter/" style="font-size: 10px;">';
 
-    $myHTML .= '<a href="http://www.fx-foreignexchange.com/currency_widget.php?value={price}&from=EUR&to=GBP&r=813" rel="nofollow" onClick="window.name=\'exchange_rates_todayNew\';window.open(this.href,\'converter\',\'toolbar=no,location=no,directories=no,status=no,menubar=no,width=660,height=880,resizable=yes,scrollbars=yes\');return false;" style="font-size: 10px;">';
+    $myHTML .= '<a href="http://www.fx-foreignexchange.com/currency_widget.php?value=1&from=EUR&to=GBP&r=813" rel="nofollow" onClick="window.name=\'exchange_rates_todayNew\';window.open(this.href,\'converter\',\'toolbar=no,location=no,directories=no,status=no,menubar=no,width=660,height=880,resizable=yes,scrollbars=yes\');return false;" style="font-size: 10px;">';
     
     $myHTML .= 'Other<br/>Currencies'; // Other Currencies
 
@@ -1024,7 +915,7 @@ function widget_currency_table_init() {
 
     $myHTML .= '</table>' . "\n";
 
-    $myHTML .= '</div>' . "\n";
+    //$myHTML .= '</div>' . "\n";
 
     //$myHTML .= '</div>' . "\n";
 
@@ -1061,9 +952,9 @@ function widget_currency_table_init() {
     } // close if
 
     //build the control panel
-    echo '<p style="margin: 20px auto;"><label style="display: block; width:300px; text-align: left;" for="currency_table_title">' .
+    echo '<p><label style="display: block; text-align: left;" for="currency_table_title">' .
      __('Title:', 'widgets') . 
-     ' <input style="display: block; width: 300px; text-align: left;" id="currency_table_title" ' .
+     ' <input class="widefat" style="display: block;text-align: left;" id="currency_table_title" ' .
      'name="currency_table_title" type="text" value="' . $options['currency_table_title'] . '" /></label></p>';
     echo '<input type="hidden" id="currency_table_widget_submit" name="currency_table_widget_submit" value="1" />';
 
@@ -1072,23 +963,20 @@ function widget_currency_table_init() {
   //register widget and widget control
   //
   register_sidebar_widget('Currency Table', 'widget_currency_table_display');
-  register_widget_control('Currency Table', 'widget_currency_table_control', 300, 300);
+  register_widget_control('Currency Table', 'widget_currency_table_control');
 }
 
 //function to write the style info to the header
-function currency_table_styles() {
+function fx_currency_table_styles() {
+  global $fx_currency_table_styles;
+  //check if loaded styles
+  //wp_head ation doesnot work. dunno why. may be on old WP sites
+  if ($fx_currency_table_styles) return false;
+  $fx_currency_table_styles=true;
 
-  //print '<link type="text/css" rel="stylesheet" href="' . path_join(WP_PLUGIN_URL, basename( dirname( __FILE__ ) )) . '/style.css" />' . "\n";
-
-  print '<link rel="stylesheet" href="' . WP_PLUGIN_URL . '/currency-table/style.css" type="text/css" media="screen" />' . "\n";
+  print '<link rel="stylesheet" href="' . WP_PLUGIN_URL . '/fx-currency-tables/style.css" type="text/css" media="screen" />' . "\n";
 }
 
-//action to have WordPress load the widget
-add_action('widgets_init', 'widget_currency_table_init');
-//action to add styles to the header
-add_action('wp_head', 'currency_table_styles');
-//action to allow shortcode
-add_shortcode('currency_table', 'currency_table_shortcode');
 
 function get_json($url) {
 
@@ -1099,7 +987,7 @@ function get_json($url) {
   if (ini_get('allow_url_fopen')) {
   
     $res = @file_get_contents($url);
-    print ini_get('allow_url_fopen');
+    //print ini_get('allow_url_fopen');
   }
 
   //$res = '';

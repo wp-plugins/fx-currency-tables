@@ -9,8 +9,7 @@
 }
 
 .currencyDataTable th {
-	background-color: #000000;
-		color:#000000;
+	background-color: #BFD6E0;
 	font-weight: normal;
 	font-size: 11px;
 	padding-left: 4px;
@@ -26,7 +25,8 @@
 	padding-left: 3px;
 	padding-right: 3px;
 	vertical-align: top;
-	text-align: left;
+/*	text-align: left;*/
+	text-align: center;
 }
 
 .currencyDataTable .currencyData {
@@ -71,4 +71,12 @@
 	margin-top: 5px;
 	overflow: hidden;
 	width: auto;
+}
+.ct_description
+{
+  color: grey;
+}
+.ct_description .ct_bold
+{
+  font-weight:bold;
 }

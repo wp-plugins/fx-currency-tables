@@ -1,10 +1,10 @@
 
 
 === FX Currency Tables ===
-Contributors: Andy Stevenson, Sergey Grachyov
+Contributors: Andy Stevenson, Maxim Denisov
 Tags: Currency, widget, Exchange, Rates
 Requires at least: 2.5
-Tested up to: 2.8
+Tested up to: 3.0
 
 FX-ForeignExchange 6 currency cross table plugin for Wordpress. This easy to use tool adds a horizontal 6 currency table to posts and pages, and the widget adds a 3 column portrait table to sidebars. The 6 currencies can be selected by the user from a list of 3 over 180 worldwide. The rates are based on a 12 minute delay feed and are live ECB interbank rates. An ideal tool for forex, currency trading and commodities sites and a very attractive addition to any e-commerce site where buyers are likely to originate across more than one currency zone.
 
